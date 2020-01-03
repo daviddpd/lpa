@@ -162,14 +162,7 @@ class SimpleLDAP {
 	}
 	
 	/**
-	 * Get users based on a query
-	 *
-	 * Returns information from users within the directory that match a certain query
-	 *
-	 * @access public
-	 * @param string $filter The search filter used to query the directory. For more info, see: http://www.mozilla.org/directory/csdk-docs/filter.htm
-	 * @param array $attributes (optional) An array containing all the attributes you want to request
-	 * @return mixed Returns the information if successful or false on error
+
 	 */
  	public function reformatUser() 
  	{
@@ -184,10 +177,11 @@ class SimpleLDAP {
 						if ( isset ($a[$k]['count']) ) {
 							$count = $a[$k]['count'];
 							for ($i=0; $i<$count; $i++ ) {
-								if ($i==0) {
+								if ($i == 0) {
 									if ( $count == 1) {
 										$this->obj{$k} = $a[$k][$i];
 									} else {
+										$this->obj{$k} = array ();
 										$this->obj{$k}[] = $a[$k][$i];
 									}
 								} else {
@@ -287,6 +281,7 @@ class SimpleLDAP {
 				}
 				$this->data = ldap_get_entries($this->ldap, $search);
 				$this->reformatUser();
+
 				return true;
 			}
 		} else {
