@@ -14,7 +14,12 @@
 <meta name="keywords" content="" />
 <meta name="description" content="" />
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400,600,700,900" rel="stylesheet" />
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+
 <script src="html/js/lpa.js"></script>
 <link href="html/css/default.css" rel="stylesheet" type="text/css" media="all" />
 <link href="html/css/fonts.css" rel="stylesheet" type="text/css" media="all" />
