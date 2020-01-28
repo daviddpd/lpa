@@ -5,13 +5,22 @@ require_once "SimpleLDAP.class.php";
 $tld = "com";
 $domain = "example";
 
-$ldap = new SimpleLDAP('ldap.corp.$domain.$tld', 389, 3);
-$ldap->dn = "ou=people,dc=$domain,dc=$tld";
-$ldap->gdn = "ou=groups,dc=$domain,dc=$tld";
-$ldap->sdn = "ou=SUDOers,dc=$domain,dc=$tld";
 
-$ldap->adn = "cn=Manager,dc=$domain,dc=$tld";
-$ldap->apass = "";
+$user_ldap = new SimpleLDAP('ldap.corp.$domain.$tld', 389, 3);
+$user_ldap->dn = 'ou=people,dc=care2,dc=com';
+$user_ldap->gdn = 'ou=groups,dc=care2,dc=com';
+$user_ldap->sdn = 'ou=SUDOers,dc=care2,dc=com';
+
+$user_ldap->adn = "cn=Manager,dc=care2,dc=com";
+$user_ldap->apass = "";
+
+$target_ldap = SimpleLDAP('ldap.corp.$domain.$tld', 389, 3);
+$target_ldap->dn = 'ou=people,dc=care2,dc=com';
+$target_ldap->gdn = 'ou=groups,dc=care2,dc=com';
+$target_ldap->sdn = 'ou=SUDOers,dc=care2,dc=com';
+
+$target_ldap->adn = "cn=Manager,dc=care2,dc=com";
+$target_ldap->apass = "";
 
 $brand = array();
 

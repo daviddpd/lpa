@@ -66,99 +66,161 @@
 		width: 2%;
 		clear: right;
 	}
-	
 	#userLDAPattrabute div span.meta-span-last {
 	}
-
-
 	div.editable-input  input.metaInputValue {
 		width: 350px;	
 	}
 	div.popover-content > div > form > div > div:nth-child(1) > div.editable-input > input {
 		width: 350px;
 	}
-	
 	.red {
 		color: red;
 	}
-	
-	.mono {
-		font-family: monospace;
+	.eighty {
 		font-size: 0.8em;
 	}
-	
-	
+	.mono {
+		font-family: monospace;
+		font-size: 0.7em;
+	}
+	.bold {
+		font-weight: 700;
+	}
+	.left {
+		text-align: left;
+	}
+	.bottom_underline {
+		border-bottom: 4px;
+		border-bottom-color: #888;
+		border-bottom-style: solid;
+		border-bottom-width: 1px;
+		margin-bottom: 2px;
+	}
+	.gray {
+		color: #666;
+	}
+	.span60 {
+		width: 60%;
+	}
+	.span40 {
+		width: 40%;
+	}
+	.span100 {
+		width: 100%;
+	}
+	.sshpaste {
+		font-family: monospace;
+		font-size: 0.8em;
+		height: 160px;
+		width: 500px;
+	}
+	#copyright {
+		border-bottom-style: none;
+	}
 </style>
 <?php 
-global $groupLut;
+global $user_groupLut;
 
 function format_ldapValue($k,$v)
 {
-	if ( $k == "sshpublickey" ) 
-	{
-		$p = explode (" " , $v);
-//		strlen ($p[1]);
-		$s = substr($p[1], 0, 8 );
-		$e = substr($p[1], -8, 8 );
-		$p[1] = "$s ... $e";
-	} else {
-		$p = array();
-		$l = strlen ($v);
-		if ($l > 50) {
-			$p[0] = substr($v, 0, 45) . "...";
-		} else { 
-			$p[0] = $v;
-		}
+	if ( isset ($v)  ) {
+		if ( $k == "sshpublickey" )
+		{
+//			$p = explode (" " , $v);
+	//		strlen ($p[1]);
+//			$s = substr($p[1], 0, 8 );
+//			$e = substr($p[1], -8, 8 );
+//			$p[1] = "$s ... $e";
+			$sig = `echo  $v | /bin/ssh-keygen -lf - `;
+			$p = explode (" " , $sig);
+		} else {
+			$p = array();
+			$l = strlen ($v);
+			if ($l > 50) {
+				$p[0] = substr($v, 0, 45) . "...";
+			} else {
+				$p[0] = $v;
+			}
 		
-		$p[1] = "";
-		$p[2] = "";
+			$p[1] = "";
+			$p[2] = "";
 	
+		}
+		return $p;
+	} else {
+		return array();
 	}
-	return $p;
 }
 
 
 function editableRow($fo, $k, $v, $v2) {
-	global $groupLut;
+	global $user_groupLut;
+	$rowClasses="";
 	$editClasses="";
 	$editClassesDelete="";
 	$faHidden="fa-hidden";
 	$mono = "";
-	$ldap_full_data = "ldapdata=\"$v\"";
+	$user_ldap_full_data = "ldapdata=\"$v\"";
 //	$editClassesDelete="";
 	$eg = $fo{'by'}; // Getting group required to to edit this field.
+	$qs	 = ""; // Query String Additions
 	
-	if ( $fo{'editable'}  && isset ($groupLut{$eg}) ) {
+	if ( $fo{'editable'}  && isset ($user_groupLut{$eg}) ) {
 		$editClasses="meta-inline meta-inline-value editable editable-click";
 	}
-	if ( $fo{'editable'} && $fo{'deletable'} && isset ($groupLut{$eg}) ) {
+	if ( $fo{'ldapou'} == "user" ) {
+		 $qs = "&ou=user";
+	}
+	if ( $fo{'ldapou'} == "SUDOers" ) {
+		 $qs = "&ou=SUDOers";
+	}
+
+	if ( $fo{'ldapou'} == "groups" ) {
+		 $qs = "&ou=groups";
+		 if ( $v == "YES" ) {
+			 $rowClasses="bold";
+		}
+		 if ( $v == "NO" ) {
+			 $rowClasses="gray";
+		 }
+	}
+
+/*
+	# Deleteing not yet implemented, so remove the button.
+
+	if ( $fo{'editable'} && $fo{'deletable'} && isset ($user_groupLut{$eg}) ) {
 		$editClassesDelete="delete_dpdMeta";
 		$faHidden="";
 	}
+*/
 	if ( $k == "sshpublickey" )  {
 		$mono = "mono";	
 	}
 	$type = $fo{'type'};
 	if ($type == "select") {
 		 $data_source = 'data-source="' . $fo{'src'} . '"'; 
+	}elseif ($type == "password") {
+		$type = "text";
+//		 $data_source = 'data-mode="popup"';
 	} else {
 		 $data_source = '';
 	}
 	
 print "
-	<span class=\"meta-span\">
+	<span class=\"meta-span $rowClasses\">
 	 <span class=\"$editClasses $mono\" 
-		id=\"value\" data-inputclass=\"metaInputValue\" 
+		id=\"" . $k . "\" data-inputclass=\"metaInputValue\"
 		data-type=\"$type\" data-pk=\"" . $k . "\" 
-		data-url=\"api.php?field=" . $k . "&action=update" .  "\"
+		data-url=\"api.php?field=" . $k . "&action=update" . $qs .  "\"
 		data-title=\"enter value\" 
 		$data_source >" . $v2 . " 
 	</span>
 	</span>
-	<span class=\"meta-span-delete meta-span-last\">
+	<span class=\"meta-span-delete meta-span-last $faHidden\">
 		<a class=\"$editClassesDelete btn btn-default btn-xs $faHidden\" 
 			ldap-field=\"" . $k .  "\" 
-			$ldap_full_data 
+			$user_ldap_full_data
 			data-container=\"body\" title=\"\" data-original-title=\"Delete Meta Data\">
 			<i class=\"fa fa-gray fa-times $faHidden\"></i>
 		</a>
@@ -168,7 +230,7 @@ print "
 }
 									
 function row($k,$v,$fo){
-global $groupLut;
+global $user_groupLut;
 ?>
 <div class="meta-main-row">
 	<span class="meta-span-label">
@@ -181,13 +243,13 @@ global $groupLut;
 	 }
  ?>
 	 </span>
-<?php 						
+<?php
 	$eg = $fo{'by'}; // Getting group required to to edit this field.
 	$s = format_ldapValue($k,$v);
 	$v2 = join (" ", $s);
-	
+
 	editableRow($fo, $k, $v, $v2);
-		
+
 ?>
 </div>
 
@@ -195,7 +257,7 @@ global $groupLut;
 }
 
 function row_multi($k,$v,$fo){
-global $groupLut;
+global $user_groupLut;
 	foreach ($v as $n => $i) 
 	{
  ?>
@@ -235,21 +297,110 @@ global $groupLut;
 		<p>Profile user settings</p>
 </div>
 <div>
-		<div id="userLDAPattrabute" >
+<div>
+	<div>
+		<button id="changePassword" type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">Change Password</button>
+		<button id="sshKeyUploadButton" type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-trigger="manual" data-target="#myModalSSH">Upload SSH Public Key</button>
+	</div>
+	<div>
+		&nbsp;
+	</div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Changing/Syncing Password(s)</h4>
+        <h5 class="modal-title" id="pwdChgStatus">&nbsp;</h5>
+      </div>
+      <div class="modal-body">
+      <table>
+      <tr>
+		<td>Old Password:</td>
+		<td><input type="password" id="oldpassword1" size="20" /></td>
+	</tr>
+	<tr>
+		<td>New Password:</td>
+		<td><input type="password" id="password1" size="20" /></td>
+	</tr>
+		<td>Confirm New Password:</td>
+		<td><input type="password" id="password2" size="20" /></td>
+	</tr>
+	</table>
+      </div>
+      <div class="modal-footer">
+        <button id="closePassword" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="savePassword" type="submit" class="btn btn-primary" >Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal - SSH KEYS -->
+
+<div class="modal fade" id="myModalSSH" tabindex="-1" role="dialog" aria-labelledby="myModalLabelSSH">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabelSSH">Upload/Change SSH Authorized keys</h4>
+        <h5 class="modal-title" id="sshUploadStatus">&nbsp;</h5>
+        <p class="eighty" >Copy/Paste any number of SSH Public Keys, delimitated by Carriage Return <br>( same as the authorized_keys file format ).<br>This action will replace all currently installed keys.</p>
+      </div>
+      <div class="modal-body">
+		<textarea class="sshpaste" id="sshKeyUpload" ></textarea>
+
+      </div>
+      <div class="modal-footer">
+        <button id="closeSSH" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="saveSSH" type="submit" class="btn btn-primary" >Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="meta-main-row">&nbsp;</div>
+<div class="meta-main-row bold left bottom_underline">User Information</div>
+<div id="userLDAPattrabute" >
 <?php
+
 	include "../../config/config.php";
 	include "../../config/ldapFields.php";
 	$u = $_SERVER['REMOTE_USER'];
-	$ldap->getUsers("(uid=" . $u . ")");
-	$a = $ldap->getAttrs($u);
-	$groups = $ldap->getUsersGroup($u);	
-	$groupLut = array ();
-	foreach ( $groups as $g ) {
-		$groupLut{$g} = 1;
+
+	$user_ldap->getUsers("(uid=" . $u . ")");
+	$user_groups = $user_ldap->getUsersGroup($u);
+//	$user_groupLut = array ();
+	foreach ( $user_groups as $g ) {
+		$user_groupLut{$g} = 1;
 	}
 
-	foreach ($ldap->obj as $k => $v) {
+	if ( isset ($user_groupLut{_LDAP_ADMIN_ACCOUNT}) ) 
+	{
+		if ( isset ($_GET['user'] ) ) {
+			$u = $_GET['user'];
+		}
+	}
+
+	$target_ldap->getUsers("(uid=" . $u . ")");
+	$target_groups = $target_ldap->getUsersGroup($u);
+//	$target_groupLut = array ();
+	foreach ( $target_groups as $g ) {
+		$target_groupLut{$g} = 1;
+	}
+
+	foreach (array_keys ($ldapFields{'edittable'}{'user'}) as $k ) {
+//	foreach ($target_ldap->obj as $k => $v) {
 		$k = strtolower($k);
+		if ( !isset ( $target_ldap->selfObj{$u}{$k} ) ) {
+			$v = "";
+		} else {
+			$v = $target_ldap->selfObj{$u}{$k};
+		}
 		$fo = $ldapFields{'edittable'}{'user'}{$k}; // fieldObject
 		if (!$fo{'display'}) { continue; }
 		if ( is_array ($v)  ) {
@@ -258,10 +409,37 @@ global $groupLut;
 			row($k,$v,$fo);
 		}
 	}
+
 ?>
-		</div>
-		</div>
+<div class="meta-main-row">&nbsp;</div>
+<div class="meta-main-row bold left bottom_underline">Group Membership</div>
+<?php
+	foreach (array_keys ($ldapFields{'edittable'}{'groups'}) as $k ) {
+		$k = strtolower($k);
+//		if (!isset ($ldapFields{'edittable'}{'groups'}{$k})) { continue; }
+		if ( isset ( $ldapFields{'edittable'}{'groups'}{$k} ) ) 
+		{
+			$fo = $ldapFields{'edittable'}{'groups'}{$k};	
+		} else {
+		 continue;
+		}
+		if (!$fo{'display'}) { continue; }
+		
+		if ( isset ($target_groupLut{$k}) ) {
+			row($k,'YES',$fo);
+		} else {
+			row($k,'NO',$fo);
+		
+		}
+	}
+?>
+<div class="meta-main-row">&nbsp;</div>
+<div class="meta-main-row bold left bottom_underline">Link Authentications</div>
+
+</div>
+</div>
 <script>
+	var _targetUser =  $('#uid').html().trim();
 	userLDADInit();
 </script>
 </div>

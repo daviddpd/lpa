@@ -23,10 +23,23 @@ class SimpleLDAP {
 	 * @var resource
 	 * @access private
 	 */
-	private $ldap;
-	private $bind;	
+	private $ldap = NULL;
+
+	private $bind = NULL;
+
+	private $hostname = NULL;
+	private $port = NULL;
+	private $protocol = null;
+	private $tls = TRUE;
+
+	private $user = NULL;
+	private $passwod  = NULL;
+
 	/**
-	 * Holds the default Distinguished Name. Ex.: ou=users,dc=demo,dc=com
+	  * Holds the default Distinguished Name.
+		dn  => ou=people,dc=example,dc=com
+		gdn => ou=groups,dc=example,dc=com
+		sdn => ou=SUDOers,dc=example,dc=com
 	 *
 	 * @var string
 	 * @access public
@@ -34,38 +47,24 @@ class SimpleLDAP {
 	public $dn;
 	public $gdn;
 	public $sdn;
-	
-	/**
-	 * Holds the administrator-priviledge Distinguished Name and user. Ex.: cn=admin,dc=demo,dc=com
-	 *
-	 * @var string
-	 * @access public
-	 */
-	public $adn;
-	
-	/**
-	 * Holds the administrator-priviledge user password. Ex.: 123456
-	 *
-	 * @var string
-	 * @access public
-	 */
-	public $apass;
-	
+
+
 	/**
 	 * holds ldap return data.
 	 *
 	 * @var array/hash/obj
 	 * @access public
 	 */
-	public $data;
+	public $data = null;
 	public $gdata = null;
 	public $sdata = null;
-	
+
+	public $selfObj = null;
 	public $obj = null;
 	public $gobj = null;
 	public $sobj = null;
-	
-	
+
+
 	/**
 	 * LDAP server connection
 	 *
@@ -78,6 +77,11 @@ class SimpleLDAP {
 	 * @param int $protocol (optional) Protocol version of your LDAP server
 	 */
 	public function __construct($hostname, $port, $protocol = null, $tls = true) {
+		$this->hostname = $hostname;
+		$this->port = $port;
+		$this->protocol = $protocol;
+		$this->tls = $tls;
+
 		$this->ldap = ldap_connect($hostname, $port);
 		if ( $tls ) {
 			ldap_start_tls($this->ldap);
@@ -86,29 +90,11 @@ class SimpleLDAP {
 		if($protocol != null) {
 			ldap_set_option($this->ldap, LDAP_OPT_PROTOCOL_VERSION, $protocol);
 		}
-		
-		$this->bind = FALSE;
-		$this->obj = array ();
+		$this->bind = ldap_bind($this->ldap);
+
 	}
 	
-	/**
-	 * Bind as an administrator in the LDAP server
-	 *
-	 * Bind as an administrator in order to execute admin-only tasks,
-	 * such as add, modify and delete users from the directory.
-	 *
-	 * @access private
-	 * @return bool Returns if the bind was successful or not
-	 */
-	private function adminBind() {
-		if ($this->bind) { 
-			return $this->bind; 
-		} else {
-			$this->bind = ldap_bind($this->ldap, $this->adn, $this->apass);
-			return $this->bind;
-		}
-	}
-	
+
 	/**
 	 * Authenticate an user and return it's information
 	 *
@@ -125,41 +111,22 @@ class SimpleLDAP {
 		 * We bind using the provided information in order to check if the user exists
 		 * in the directory and his credentials are valid
 		 */
-		$this->bind = ldap_bind($this->ldap, "uid=$user," . $this->dn, $password);
 		
-		if($this->bind) {
-		
-			/**
-			 * If the user is logged in, we bind as an administrator and search the directory
-			 * for the user information. If successful, we'll return that information as an array
-			 */
-			if($this->adminBind()) {
-				$search = ldap_search($this->ldap, "uid=$user," . $this->dn, "(uid=$user)");
-				
-				if(!$search) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-				}
-				
-				$data = ldap_get_entries($this->ldap, $search);
-				
-				if(!$data) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-				}
-				
-				return $data;
-			} else {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			}
+		if ( preg_match ( '/=/', $user ) ) {
+			$this->user = $user;
 		} else {
-			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			$this->user = "uid=$user," . $this->dn;
+		}
+		
+		$this->password = $password;
+		$this->bind = ldap_bind($this->ldap, $this->user, $this->password);
+		if( $this->bind ) {
+			return true;
+		} else {
 			return false;
 		}
 	}
+
 	
 	/**
 
@@ -167,10 +134,22 @@ class SimpleLDAP {
  	public function reformatUser() 
  	{
 
-		foreach ($this->data as $a)
+		$obj = array ();
+
+		if ( isset ( $this->data['count'] ) ) {
+			$tc = $this->data['count'];
+		}
+		for ( $z=0; $z<$tc; $z++)
 		{
+			$a = $this->data[$z];
 			if ( is_array ( $a ) ) 
 			{
+				if ( isset ($a['uid'][0]) ) {
+					$uid = $a['uid'][0];
+				} else {
+					$uid = "id-" . $z;
+				}
+				$obj[$uid] = array ();
 				foreach ( array_keys ( $a )  as $k ) 
 				{
 					if ( is_string ( $k ) ) {
@@ -179,13 +158,13 @@ class SimpleLDAP {
 							for ($i=0; $i<$count; $i++ ) {
 								if ($i == 0) {
 									if ( $count == 1) {
-										$this->obj{$k} = $a[$k][$i];
+										$obj[$uid]{$k} = $a[$k][$i];
 									} else {
-										$this->obj{$k} = array ();
-										$this->obj{$k}[] = $a[$k][$i];
+										$obj[$uid]{$k} = array ();
+										$obj[$uid]{$k}[] = $a[$k][$i];
 									}
 								} else {
-									$this->obj{$k}[] = $a[$k][$i];								
+									$obj[$uid]{$k}[] = $a[$k][$i];
 								}
 							}
 						}
@@ -193,10 +172,28 @@ class SimpleLDAP {
 				}
 			}
 		}
- 
+
+		if  ( $tc > 1 )
+		{
+			$this->obj = $obj;
+		} else {
+			$this->selfObj = $obj;
+		}
+		return true;
 	}
- 	public function reformatGroup() 
- 	{
+	/**
+	 * Reformat Group into php assoicative arrays.
+	 *
+		gdata['group'][${GroupName}][${LDAP_GROUP_ATTS}]
+		gdata['group'][${GroupName}]['memberuid'] = array ( )
+			Numbericly indexed array of users.
+		gdata['group'][${GroupName}]['lut'][${UID}]
+			Hash/assoiative array of users.
+		gdata['users'][${UID}][${GroupName}]
+			Hash/assoiative array of users and their groups.
+	 */
+	public function reformatGroup()
+	{
 		for ($i=0; $i<$this->gdata['count']; $i++) 
 		{
 			// cn= group name	
@@ -215,82 +212,111 @@ class SimpleLDAP {
 			}		
 		}
 	}
-		
-		
+	/**
+	 * getGroup
+	 *
+		Genenic fetching/searching for groups.
+	*/
+
 	public function getGroup($filter, $attributes = null) 
 	{
-		if($this->adminBind()) {
-			if($attributes !== null) {
-				$search = ldap_search($this->ldap, $this->gdn, $filter, $attributes);
-				if(!$search) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-					return false;
-				}
-				$this->gdata = ldap_get_entries($this->ldap, $search);
-				$this->reformatGroup();
-				return true;
-			} else {
-				$search = ldap_search($this->ldap, $this->gdn, $filter);
-				if(!$search) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-					return false;
-				}
-				$this->gdata = ldap_get_entries($this->ldap, $search);
-				$this->reformatGroup();
-				return true;
+		if($attributes !== null) {
+			$search = ldap_search($this->ldap, $this->gdn, $filter, $attributes);
+			if(!$search) {
+				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+				// throw new Exception($error);
+				error_log ( $error );
+				return false;
 			}
+			$this->gdata = ldap_get_entries($this->ldap, $search);
+			$this->reformatGroup();
+			return true;
 		} else {
-			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
-			return false;
+			$search = ldap_search($this->ldap, $this->gdn, $filter);
+			if(!$search) {
+				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+				//throw new Exception($error);
+				error_log ( $error );
+				return false;
+			}
+			$this->gdata = ldap_get_entries($this->ldap, $search);
+			$this->reformatGroup();
+			return true;
 		}
 	
 	}
 	
-	public function getUsersGroup($user) 
+	/**
+	 * getUsersGroup
+	 *
+		Returns all the users groups.
+		Caches ALL groups into gdata and gobj.
+	*/
+
+	public function getUsersGroup($user, $assoc = FALSE )
 	{
-	
-		if ( $this->gobj == null ) { 
+
+		if ( $this->gobj == null ) {
 			$this->getGroup("objectclass=posixGroup");
 		}
 
-		return array_keys ( $this->gobj{'user'}{$user} );
-	}
-	
-		 
-	public function getUsers($filter, $attributes = null) {
-		if($this->adminBind()) {
-			if($attributes !== null) {
-				$search = ldap_search($this->ldap, $this->dn, $filter, $attributes);
-				if(!$search) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-					return false;
-				}
-				$this->data = ldap_get_entries($this->ldap, $search);
-				$this->reformatUser();
-				return true;
-			} else {
-				$search = ldap_search($this->ldap, $this->dn, $filter);
-				if(!$search) {
-					$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-					throw new Exception($error);
-					return false;
-				}
-				$this->data = ldap_get_entries($this->ldap, $search);
-				$this->reformatUser();
+		if (isset ($this->gobj{'user'}{$user}) && $assoc )
+		{
+			return $this->gobj{'user'}{$user};
 
-				return true;
-			}
+		} elseif   (isset ($this->gobj{'user'}{$user}) && $assoc == FALSE )
+		{
+			return array_keys ( $this->gobj{'user'}{$user} );
 		} else {
-			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
-			return false;
+			return array();
+		}
+	}
+
+	/**
+	 * getUsers
+	 *
+		Genenic fetching/searching for users.
+	*/
+
+	public function getUsers($filter, $attributes = null) {
+		if($attributes !== null) {
+			$search = ldap_search($this->ldap, $this->dn, $filter, $attributes);
+			error_log ( "getUsers:search:attrs " . json_encode ( $search ) );
+			if(!$search) {
+				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+				error_log ( $error );
+				//throw new Exception($error);
+				return false;
+			}
+			$this->data = ldap_get_entries($this->ldap, $search);
+			$this->reformatUser();
+			return true;
+		} else {
+			$search = ldap_search($this->ldap, $this->dn, $filter);
+			error_log ( "getUsers:search " . json_encode ( $search ) );
+			if(!$search) {
+				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+				error_log ( $error );
+				//throw new Exception($error);
+				return false;
+			}
+			$this->data = ldap_get_entries($this->ldap, $search);
+			$this->reformatUser();
+
+			return true;
 		}
 	}
 	
+	public function getUser($user = NULL )
+	{
+		if ( $user == NULL )
+		{
+			$user = $this->user;
+		}
+		return ( $this->getUsers( "(uid=$user)" ) );
+
+	}
+
 	/**
 	 * Inserts a new user in LDAP
 	 *
@@ -303,19 +329,14 @@ class SimpleLDAP {
 	 * @return bool Returns true on success and false on error
 	 */
 	public function addUser($user, $data) {
-		if($this->adminBind()) {
-			$add = ldap_add($this->ldap, "uid=$user," . $this->dn, $data);
-			if(!$add) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$add = ldap_add($this->ldap, "uid=$user," . $this->dn, $data);
+		if(!$add) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			//throw new Exception($error);
+			error_log ( $error );
 			return false;
+		} else {
+			return true;
 		}
 	}
 	
@@ -329,19 +350,14 @@ class SimpleLDAP {
 	 * @return bool Returns true on success and false on error
 	 */
 	public function removeUser($user) {
-		if($this->adminBind()) {
-			$delete = ldap_delete($this->ldap, "uid=$user," . $this->dn);
-			if(!$delete) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$delete = ldap_delete($this->ldap, "uid=$user," . $this->dn);
+		if(!$delete) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			error_log ( $error );
+			//throw new Exception($error);
 			return false;
+		} else {
+			return true;
 		}
 	}
 
@@ -358,70 +374,64 @@ class SimpleLDAP {
 	 * @return bool Returns true on success and false on error
 	 */
 	public function modifyUser($user, $data) {
-		if($this->adminBind()) {
-			$modify = ldap_modify($this->ldap, "uid=$user," . $this->dn, $data);
-			if(!$modify) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$modify = ldap_modify($this->ldap, "uid=$user," . $this->dn, $data);
+		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			error_log ( $error );
+			//throw new Exception($error);
 			return false;
+		} else {
+			return true;
 		}
 	}
 	public function modDelUserAttr($user, $data) {
-		if($this->adminBind()) {
-			$modify = ldap_mod_del($this->ldap, "uid=$user," . $this->dn, $data);
-			if(!$modify) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$modify = ldap_mod_del($this->ldap, "uid=$user," . $this->dn, $data);
+		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			error_log ( $error );
+			//throw new Exception($error);
 			return false;
+		} else {
+			return true;
 		}
 	}
 
+	public function addObjectClass($user, $oc)
+	{
+		$this->getUser($user);
+		$data = array ();
+		$data['objectClass'] = $this->selfObj[$user]['objectclass'];
+		array_push ($data['objectClass'], $oc);
+		$this->modifyUser($user, $data );
+	}
+
+
+	public function removeObjectClass($user, $oc)
+	{
+		$this->modDelUserAttr($user, array ( 'objectClass' => $oc ) );
+	}
 
 
 	public function addGroupMember($group, $user) {
-		if($this->adminBind()) {
-			$modify = ldap_modify($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
-			if(!$modify) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$modify = ldap_modify($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
+		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			error_log ( $error );
+			//throw new Exception($error);
 			return false;
+		} else {
+			return true;
 		}
 	}
 	public function delGroupMember($group, $user) {
-		if($this->adminBind()) {
-			$modify = ldap_mod_del($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
-			if(!$modify) {
-				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-				throw new Exception($error);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
+		$modify = ldap_mod_del($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
+		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
-			throw new Exception($error);
+			error_log ( $error );
+			//throw new Exception($error);
 			return false;
+		} else {
+			return true;
 		}
 	}
 
