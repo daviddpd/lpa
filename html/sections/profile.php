@@ -368,8 +368,12 @@ global $user_groupLut;
 <div id="userLDAPattrabute" >
 <?php
 
-	include "../../config/config.php";
-	include "../../config/ldapFields.php";
+	require_once "../../config/config.php";
+	require_once "../../config/ldapFields.php";
+	require_once "../../config/ldapFields.php";
+	require_once "../../lib/pixl-server-user.class.php";
+	require_once "../../lib/cronicle-sync.php";
+	
 	$u = $_SERVER['REMOTE_USER'];
 
 	$user_ldap->getUsers("(uid=" . $u . ")");
@@ -434,7 +438,59 @@ global $user_groupLut;
 	}
 ?>
 <div class="meta-main-row">&nbsp;</div>
-<div class="meta-main-row bold left bottom_underline">Link Authentications</div>
+<div class="meta-main-row bold left bottom_underline">Linked/Sync Authentications</div>
+	<div class="meta-main-row">
+		<span class="meta-span-label bold">
+		CRON: cronicle:
+		</span>
+
+	<span class="meta-span">
+	
+			<span width="200px">
+				<span class="bold">Access: </span>
+				<span>  
+					<?php
+							$x = print_r ( $target_groupLut, true );
+							echo "\n<!-- $x -->\n";
+							$cronStatus = "";
+							if ( isset ( $target_groupLut{_CRON_GROUP} ) && isset ( $target_groupLut{_CRON_ADMIN_GROUP} )  ) {
+								$cronStatus = "Admin";
+							} elseif ( isset ( $target_groupLut{_CRON_GROUP} ) ) {
+								$cronStatus = "Standard";
+							} else {
+								$cronStatus = "None";
+							}
+							echo $cronStatus;									
+					?>
+				</span>
+			</span>
+
+			<span width="200px">
+				<span class="bold">Status: </span>
+				<span>
+<?php
+		$c = new pixlServerUser($cronicle_server);
+		$c->CACERT = $CACERT;
+		$r = $c->adminLogin($cronicle_user, $cronicle_password);		
+		if ( $c->checkUser($u) ) {
+			echo "Provisioned";
+		} else {
+			if ($cronStatus !== "None" ) 
+			{
+				echo "unprovisioned; <i>Change your password to sync/create your account</i>";
+
+			} else {
+				echo "unprovisioned; <i>Request access from Ops</i>";
+			}
+		}
+	
+?>				
+				</span>
+			</span>
+
+	</span>
+	<span class="meta-span-delete meta-span-last $faHidden">&nbsp;</span>
+
 
 </div>
 </div>

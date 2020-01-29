@@ -1,8 +1,10 @@
 <?php
 
 	
-	include "config/config.php";
-	include "config/ldapFields.php";
+	require_once "config/config.php";
+	require_once "config/ldapFields.php";
+	require_once "lib/pixl-server-user.class.php";
+	require_once "lib/cronicle-sync.php";
 
 /*
 	Verify that the signed in User can modify the field being edited.
@@ -14,7 +16,7 @@ function verifyPermissions($ou, $field, $user, $targetUser) {
 	global $editMode;
 	$groups = $target_ldap->getUsersGroup($user, true);
 	$whoCan = $ldapFields{'edittable'}{$ou}{$field}{'by'};
-	error_log ( "verifyPermissions: whoCan: " . $whoCan . " ; adminAccount: " . _LDAP_ADMIN_ACCOUNT . " groups: " . json_encode ($groups) );
+	// error_log ( "verifyPermissions: whoCan: " . $whoCan . " ; adminAccount: " . _LDAP_ADMIN_ACCOUNT . " groups: " . json_encode ($groups) );
 
 	if ( $whoCan == "_self" && ( $user == $targetUser ) )
 	{
@@ -86,13 +88,18 @@ if ($_SERVER['REQUEST_METHOD'] == "GET"  )
 				ret ( array ('errno' => 1, 'result' => 'User Not Allowed to Modify this value.') );
 			}
 			$pwcheck = $target_ldap->check_ldap_passwd( $_POST['user'], $_POST['oldpassword1'] );
-			error_log ("pw check: " . json_encode ($pwcheck) );
+			//error_log ("pw check: " . json_encode ($pwcheck) );
 			$pwchg = $target_ldap->change_ldap_passwd( $_POST['user'], $_POST['oldpassword1'], $_POST['password1'] );
-			error_log ("pw chg: " . json_encode($pwchg) );
+			//error_log ("pw chg: " . json_encode($pwchg) );
 
 			if ($pwchg == NULL ) {
 				ret ( array ('errno' => 1, 'result' => 'Changing Password Faild.') );
 			} else {
+				$_pu = $_POST['user'];
+				$target_ldap->getUser($_pu);
+				$groups = $target_ldap->getUsersGroup($_pu, true);				
+				$cronicle = new cronicleSync($cronicle_user, $cronicle_password, $cronicle_server);
+				$cronicle->sync ( $target_ldap->selfObj[$_pu], $groups, $_POST['password1'] ); 
 				ret ( array ('errno' => 0, 'result' => 'Password Changed') );
 			}
 		}
@@ -167,9 +174,26 @@ if ($_SERVER['REQUEST_METHOD'] == "GET"  )
 				}
 
 			} else {
+			
+				$update_fields = array ( $_POST['pk'] => $_POST['value'] );
+				if (in_array ($_POST['pk'], array ( "givenname", "initials", "sn") ) ) 
+				{
+					$cn = array();
+					foreach ( array ( "givenname", "initials", "sn") as $a ) {
+						$f = $target_ldap->selfObj[$user][$a];
+						if ( $a == $_POST['pk'] ) {
+							$f = $_POST['value'];
+						}
+						array_push ( $cn, $f );			
+					}					
+					
+				}
+				$update_fields['cn'] = implode (" ", $cn);
+				$update_fields['gecos'] =  implode (" ", $cn);
+				error_log ( " update user : " . json_encode($update_fields) . "\n" );
 				$status = $target_ldap->modifyUser(
 					$user,
-					array ( $_POST['pk'] => $_POST['value'] )
+					$update_fields
 				);
 			}
 			if ( $status == TRUE )

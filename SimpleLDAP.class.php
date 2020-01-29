@@ -281,7 +281,7 @@ class SimpleLDAP {
 	public function getUsers($filter, $attributes = null) {
 		if($attributes !== null) {
 			$search = ldap_search($this->ldap, $this->dn, $filter, $attributes);
-			error_log ( "getUsers:search:attrs " . json_encode ( $search ) );
+			// error_log ( "getUsers:search:attrs " . json_encode ( $search ) );
 			if(!$search) {
 				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
 				error_log ( $error );
@@ -293,7 +293,7 @@ class SimpleLDAP {
 			return true;
 		} else {
 			$search = ldap_search($this->ldap, $this->dn, $filter);
-			error_log ( "getUsers:search " . json_encode ( $search ) );
+			// error_log ( "getUsers:search " . json_encode ( $search ) );
 			if(!$search) {
 				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
 				error_log ( $error );
@@ -413,7 +413,7 @@ class SimpleLDAP {
 
 
 	public function addGroupMember($group, $user) {
-		$modify = ldap_modify($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
+		$modify = ldap_mod_add($this->ldap, "cn=$group," . $this->gdn, array ('memberUid' => $user ) );
 		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
 			error_log ( $error );
