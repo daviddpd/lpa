@@ -571,3 +571,6 @@ class SimpleLDAP {
 		ldap_close($this->ldap);
 	}
 }
+
+
+?>
