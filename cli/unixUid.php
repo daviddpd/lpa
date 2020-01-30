@@ -24,8 +24,12 @@ print_r ( $opt );
 
 $user_ldap->getUsers("objectclass=*");
 $unixuids =  array ();
+$group_qed  = null;
 foreach ( $user_ldap->obj as $uid => $v ) 
 {
+	if ( is_null ( $group_qed ) ) {
+		$group_qed = $user_ldap->getUsersGroup($uid);
+	}	
 	if (isset ($v{'uidnumber'}) ) {
 		echo " $uid " . $v{'uidnumber'} . "\n";
 		array_push ( $unixuids, $v{'uidnumber'});
@@ -34,5 +38,18 @@ foreach ( $user_ldap->obj as $uid => $v )
 }
 sort  ($unixuids);
 print_r ( $unixuids );
+echo " ==============" ;
+
+$groups = array ();
+foreach ( $user_ldap->gdata as $g ) {
+
+	$groups[$g['cn'][0]] = $g['gidnumber'][0];
+
+}
+
+print_r ($groups);
+sort($groups);
+print_r ($groups);
+
 
 ?>
