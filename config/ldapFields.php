@@ -101,6 +101,7 @@ $ldapFields{'edittable'}{'groups'}{'cronadmins'} = $editObj;
 #$ldapFields{'edittable'}{'groups'}{'cronManager'} = $editObj;
 #$ldapFields{'edittable'}{'groups'}{'CS'} = $editObj;
 $ldapFields{'edittable'}{'groups'}{'database'} = $editObj;
+$ldapFields{'edittable'}{'groups'}{'demo'} = $editObj;
 #$ldapFields{'edittable'}{'groups'}{'design'} = $editObj;
 $ldapFields{'edittable'}{'groups'}{'devs'} = $editObj;
 $ldapFields{'edittable'}{'groups'}{'ecards'} = $editObj;
