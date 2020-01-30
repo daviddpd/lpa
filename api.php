@@ -184,12 +184,12 @@ if ($_SERVER['REQUEST_METHOD'] == "GET"  )
 						if ( $a == $_POST['pk'] ) {
 							$f = $_POST['value'];
 						}
-						array_push ( $cn, $f );			
+						array_push ( $cn, $f );
 					}					
+					$update_fields['cn'] = implode (" ", $cn);
+					$update_fields['gecos'] =  implode (" ", $cn);
 					
 				}
-				$update_fields['cn'] = implode (" ", $cn);
-				$update_fields['gecos'] =  implode (" ", $cn);
 				error_log ( " update user : " . json_encode($update_fields) . "\n" );
 				$status = $target_ldap->modifyUser(
 					$user,
