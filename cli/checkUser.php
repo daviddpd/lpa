@@ -65,13 +65,6 @@ if (
 	exit;
 }
 
-$ldapservers = array (
-	'ldap1.sjc1.care2.com',
-	'ldap1.iad1.care2.com',
-	'ldap2.sjc1.care2.com',
-	'ldap2.iad1.care2.com',
-);
-
 if (isset ($opt['json'])) 
 {
 	$json = true;
@@ -82,9 +75,9 @@ if (isset ($opt['json']))
 if ( isset ($opt['checkall']) ) {
 	foreach ( $ldapservers as $srv ) {
 		$user_ldap = new SimpleLDAP($srv, 389, 3);
-		$user_ldap->dn = 'ou=people,dc=care2,dc=com';
-		$user_ldap->gdn = 'ou=groups,dc=care2,dc=com';
-		$user_ldap->sdn = 'ou=SUDOers,dc=care2,dc=com';
+		$user_ldap->dn  = $ldap_dn;
+		$user_ldap->gdn = $ldap_gdn;
+		$user_ldap->sdn = $ldap_sdn;
 		_do ( $opt['user'], $srv, $opt['attr'], $json );
 	}
 	
