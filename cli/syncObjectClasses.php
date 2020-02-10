@@ -44,18 +44,31 @@ $user_ldap->getUsers("objectclass=*");
 $target_ldap->auth($ldapAdmin, $ldapAdminPw);
 
 $dpd =  $user_ldap->obj['dpd']['objectclass'];
-foreach ( $user_ldap->obj as $uid => $v ) 
+$name = "";
+$keys = array_keys ( $user_ldap->obj );
+sort ($keys);
+
+foreach ( $keys as $uid ) 
 {
-	echo " ===========================> dpd vs $uid ====== \n";
-	$a = array_diff ( $dpd, $v['objectclass'] );
-	print_r ( $a );	
-	foreach ( $a as $oc ) 
-	{
-		echo " ===>  $uid, add $oc \n";
-		if ( isset ( $opt['do'] ) ) {
-			$target_ldap->addObjectClass($uid, $oc );
-		}
+	$v = $user_ldap->obj[$uid];
+	foreach ( array ( "gecos", "cn", "givenname", "initials", "sn") as $a ) {
+		if ( isset ($v[$a]) ) {
+			$name = $v[$a];
+			break;
+		} 
 	}
+	
+//	echo " ===========================> dpd vs $uid ====== \n";
+	printf ( "%-21s %s \n", $uid,  $name );
+//	$a = array_diff ( $dpd, $v['objectclass'] );
+//	print_r ( $a );	
+// 	foreach ( $a as $oc ) 
+// 	{
+// 		echo " ===>  $uid, add $oc \n";
+// 		if ( isset ( $opt['do'] ) ) {
+// 			$target_ldap->addObjectClass($uid, $oc );
+// 		}
+// 	}
 }
 
 ?>
