@@ -21,10 +21,17 @@ function _prompt( $prompt, $hidden=false ) {
 }
 function _usage () {
 echo "
+	--admin           ; Bind as LDAP admin
 	--user=<STRING>  ; username/uid required
 	--attr=<STRING>  ; only print att
 	--checkall		; check all ldap servers
 	--json			; output in json
+	--server=LDAPSERVER ; connect to different ldap server than in config
+	--binddn=...	; bind as this instead.
+	--password		; prompts for bind password
+	--notls			; disbale tls/ssl
+	--update		; update/write value
+	--valvue		; value to write in --attr
 ";
 
 }
@@ -46,6 +53,15 @@ function _do ($user, $srv = NULL, $attr = NULL, $json = false) {
 		}
 	}
 }
+
+function _update ($user, $srv = NULL, $attr = NULL, $value = NULL) {
+	global $user_ldap, $output, $ldapAdmin, $ldapAdminPw;
+	$user_ldap->auth($ldapAdmin, $ldapAdminPw);
+	$user_ldap->getUser($user);
+	$update_fields[$attr] = $value;
+	$status = $user_ldap->modifyUser($user, $update_fields);
+}
+
 
 $arg = new CommandLine();
 $opt = $arg->parseArgs($argv);
@@ -72,6 +88,36 @@ if (isset ($opt['json']))
 	$json = false;
 }
 
+/*
+	--server=LDAPSERVER ; connect to different ldap server than in config
+	--binddn=...	; bind as this instead.
+	--password		; prompts for bind password
+*/
+if (isset ($opt['server']))  {
+	$user_ldap->close();
+	if ( isset ($opt['notls']) ) {
+		$tls = false;
+	} else {
+		$tls = true;
+	}
+#	echo "Connecting to " . $opt['server'] . "\n";
+	$user_ldap = new SimpleLDAP($opt['server'], 389, 3, $tls);
+	
+}
+if (isset ($opt['binddn']))  {
+	$ldapAdmin = $opt['binddn'];
+}
+#echo "Bind as DN = " . $ldapAdmin . "\n";
+if (isset ($opt['password']))  {
+	$ldapAdminPw = _prompt("Password: ", true);
+}
+
+if (isset ($opt['admin']) ||  ( isset ($opt['binddn'])  && isset ($opt['password']) )  )  {
+#	echo " Binding ... \n";
+	$user_ldap->auth($ldapAdmin, $ldapAdminPw);
+}
+
+
 if ( isset ($opt['checkall']) ) {
 	foreach ( $ldapservers as $srv ) {
 		$user_ldap = new SimpleLDAP($srv, 389, 3);
@@ -84,7 +130,11 @@ if ( isset ($opt['checkall']) ) {
 	
 } else {
 
-	_do ( $opt['user'], NULL, $opt['attr'], $json );
+	if ( isset($opt['update']) ) { 
+		_update ( $opt['user'], NULL, $opt['attr'], $opt['value'] );		
+	} else {
+		_do ( $opt['user'], NULL, $opt['attr'], $json );
+	}
 
 }
 
