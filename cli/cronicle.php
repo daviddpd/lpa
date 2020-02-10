@@ -47,7 +47,7 @@ if (
 $u = $cronicle_user;
 $p = $cronicle_password;
 
-$c = new pixlServerUser("cronicle2.sjc1.care2.com");
+$c = new pixlServerUser($cronicle_server);
 $c->CACERT =$CACERT;
 $r = $c->adminLogin($u, $p);
 $r = $c->checkUser($opt['user']);
