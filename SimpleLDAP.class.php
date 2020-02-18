@@ -377,6 +377,18 @@ class SimpleLDAP {
 		$modify = ldap_modify($this->ldap, "uid=$user," . $this->dn, $data);
 		if(!$modify) {
 			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+			#error_log ( "modifyUser: " . $error . " :: " . json_encode ($data) );
+			error_log ( "modifyUser: " . $error );
+			$modify2 = ldap_add($this->ldap, "uid=$user," . $this->dn, $data);
+			if (!$modify2) {
+				$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
+				error_log ( $error );
+				//throw new Exception($error);
+				return false;
+			} else {
+				return true;
+			}
+			$error = ldap_errno($this->ldap) . ": " . ldap_error($this->ldap);
 			error_log ( $error );
 			//throw new Exception($error);
 			return false;
