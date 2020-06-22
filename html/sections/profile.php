@@ -128,12 +128,16 @@ function format_ldapValue($k,$v)
 		if ( $k == "sshpublickey" )
 		{
 //			$p = explode (" " , $v);
-	//		strlen ($p[1]);
+//	    	strlen ($p[1]);
 //			$s = substr($p[1], 0, 8 );
 //			$e = substr($p[1], -8, 8 );
 //			$p[1] = "$s ... $e";
 			$sig = `echo  $v | /bin/ssh-keygen -lf - `;
 			$p = explode (" " , $sig);
+			$s = substr($p[1], 0, 8 );
+			$e = substr($p[1], -8, 8 );
+			$p[1] = "$s...$e";
+			
 		} else {
 			$p = array();
 			$l = strlen ($v);
@@ -469,6 +473,7 @@ global $user_groupLut;
 				<span class="bold">Status: </span>
 				<span>
 <?php
+/*
 		$c = new pixlServerUser($cronicle_server);
 		$c->CACERT = $CACERT;
 		$r = $c->adminLogin($cronicle_user, $cronicle_password);		
@@ -483,9 +488,10 @@ global $user_groupLut;
 				echo "unprovisioned; <i>Request access from Ops</i>";
 			}
 		}
+*/
+    echo "Disable. cronicle is not currently being used.";
 	
-?>				
-				</span>
+?>								</span>
 			</span>
 
 	</span>
