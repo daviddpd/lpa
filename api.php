@@ -87,9 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] == "GET"  )
 			{
 				ret ( array ('errno' => 1, 'result' => 'User Not Allowed to Modify this value.') );
 			}
-			$pwcheck = $target_ldap->check_ldap_passwd( $_POST['user'], $_POST['oldpassword1'] );
+			# $pwcheck = $target_ldap->check_ldap_passwd( $_POST['user'], $_POST['oldpassword1'] );
 			//error_log ("pw check: " . json_encode ($pwcheck) );
-			$pwchg = $target_ldap->change_ldap_passwd( $_POST['user'], $_POST['oldpassword1'], $_POST['password1'] );
+			if ( $editMode == "admin" ) { 
+				$is_admin = true; 
+				 $target_ldap->auth($ldapAdmin, $ldapAdminPw);
+			} else { $is_admin = false; }
+			$pwchg = $target_ldap->change_ldap_passwd( $_POST['user'], $_POST['oldpassword1'], $_POST['password1'], $is_admin );
 			//error_log ("pw chg: " . json_encode($pwchg) );
 
 			if ($pwchg == NULL ) {

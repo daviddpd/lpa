@@ -565,9 +565,9 @@ class SimpleLDAP {
 		return $this->auth($username, $passwd);
 	}
 
-	public function change_ldap_passwd($username, $passwd, $new){
+	public function change_ldap_passwd($username, $passwd, $new, $is_admin = false ){
 
-			if(!$this->check_ldap_passwd($username, $passwd))
+			if(!$is_admin && !$this->check_ldap_passwd($username, $passwd))
 				return NULL;
 			$r = $this->modifyUser($username, array ( 'userPassword' => $this->sshapasswd($new) ) );
 			return $r;
