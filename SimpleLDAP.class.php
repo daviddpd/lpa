@@ -93,7 +93,10 @@ class SimpleLDAP {
 		$this->bind = ldap_bind($this->ldap);
 
 	}
-	
+
+	public function	getHostname() {
+		return $this->hostname;
+	}
 
 	/**
 	 * Authenticate an user and return it's information
