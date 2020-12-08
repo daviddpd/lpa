@@ -24,8 +24,8 @@ function _usage () {
 echo "
 	--user=<STRING>  ; username/uid required
 	--attr=<STRING>  ; only print att
-	--checkall		; check all ldap servers
 	--json			; output in json
+	--sleep		; add jitter
 ";
 
 }
@@ -34,9 +34,7 @@ function _do ($user, $srv = NULL, $attr = NULL, $json = false) {
 	global $user_ldap, $output;
 	$user_ldap->getUser($user);
 	$r = array();
-	$groups = $user_ldap->getUsersGroup("dpd", true);
 	$r['user'] = $user_ldap->selfObj;
-	$r['groups'] = $groups;
 	if ( is_null ($attr) ) {
 		print_r ($r);
 	} else {
@@ -72,6 +70,12 @@ if (isset ($opt['json']))
 } else {
 	$json = false;
 }
+if (isset ($opt['sleep'])) {
+	if (is_file ('/usr/local/etc/ansible-env.sh') ) {
+		$sleep =`. /usr/local/etc/ansible-env.sh;  echo \${_RAND60}`;
+		sleep((int)$sleep);
+	}
+} 
 
 $c = count ($ldapservers);
 $t = time();
@@ -85,7 +89,6 @@ $output['unixtime'] = $t;
 $output['date'] = $today;
 $output['user'] = $opt['user'];
 $output['srv'] = $ldapservers[$m];
-
 
 $update_fields[$opt['attr']] = json_encode ( $output );
 

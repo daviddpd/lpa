@@ -31,8 +31,8 @@ echo "
     --json             ; output in json, cronicle format
 
     --nagios           ; reutrn as nagios check
-    --warning=seconds  ; number of seconds to trigger a warning (default=300)
-    --critical=seconds ; number of seconds to trigger critical  (default=600)
+    --warning=seconds  ; number of seconds to trigger a warning (default=320)
+    --critical=seconds ; number of seconds to trigger critical  (default=620)
 
     --server=LDAPSERVER ; connect to different ldap server than in config
     --binddn=...        ; bind as this instead.
@@ -40,15 +40,17 @@ echo "
     --notls             ; disbale tls/ssl
     --update            ; update/write value
     --valvue            ; value to write in --attr
+    --debug             ; debug output
 ";
 
 }
 
 function _do ($user, $srv = NULL, $attr = NULL, $json = false) {
-	global $user_ldap, $output, $output_text, $output_value;
+	global $user_ldap, $output, $output_text, $output_value, $opt;
 	$user_ldap->getUser($user);
 	$r = array();
 	$r['user'] = $user_ldap->selfObj;
+	if ( isset ( $opt['debug'] ) ) { print_r ( $r ); }
 	if ( is_null ($attr) ) {
 		print_r ($r);
 	} else {
@@ -170,8 +172,8 @@ if (isset ($opt['json']))
 
 /*
     --nagios           ; reutrn as nagios check
-    --warning=seconds  ; number of seconds to trigger a warning (default=300)
-    --critical=seconds ; number of seconds to trigger critical  (default=600)
+    --warning=seconds  ; number of seconds to trigger a warning (default=320)
+    --critical=seconds ; number of seconds to trigger critical  (default=620)
 */
 
 if ( isset ($opt['nagios']) ) {
@@ -182,13 +184,13 @@ if ( isset ($opt['nagios']) ) {
 if ( isset ($opt['warning']) ) {
 	$warning = $opt['warning'];
 } else {
-	$warning = 300;
+	$warning = 320;
 }
 
 if ( isset ($opt['critical']) ) {
 	$critical = $opt['critical'];
 } else {
-	$critical = 600;
+	$critical = 620;
 }
 
 
@@ -233,6 +235,10 @@ if ( isset ($opt['checkall']) ) {
 		_do ( $opt['user'], $srv, $opt['attr'], $json );
 	}
 } else {
+
+		$user_ldap->dn  = $ldap_dn;
+		$user_ldap->gdn = $ldap_gdn;
+		$user_ldap->sdn = $ldap_sdn;
 
 	$srv = $user_ldap->getHostname();
 	if ( isset($opt['update']) ) { 
