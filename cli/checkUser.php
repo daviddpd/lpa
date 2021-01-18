@@ -8,10 +8,13 @@ if ( isset ($_ENV["LPA_BASE_DIR"]) && is_dir ($_ENV["LPA_BASE_DIR"]) ) {
 	$LPA_BASE_DIR = $_ENV["LPA_BASE_DIR"];
 } else {
 	$LPA_BASE_DIR = dirname (realpath ($argv[0]));
+#	echo " LPA_BASE_DIR: $LPA_BASE_DIR \n";
+	$LPA_BASE_DIR = preg_replace('/\/?cli\/?$/', "", $LPA_BASE_DIR);
+#	echo " LPA_BASE_DIR: $LPA_BASE_DIR \n";
 }
 
 #echo "LPA BASE DIR : $LPA_BASE_DIR ";
-ini_set('include_path',ini_get('include_path').":/var/www/nx/lpa:$LPA_BASE_DIR:$LPA_BASE_DIR:$LPA_BASE_DIR/config:$LPA_BASE_DIR/lib:");
+ini_set('include_path',ini_get('include_path').":$LPA_BASE_DIR:$LPA_BASE_DIR/config:$LPA_BASE_DIR/lib:");
 
 #echo "Include Path: " . ini_get('include_path') . "\n";
 
