@@ -3,7 +3,17 @@
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
-ini_set('include_path',ini_get('include_path').':/var/www/nx/lpa:/z/home/dpd/lpa:/z/home/dpd/lpa/config:/z/home/dpd/lpa/lib:');
+
+if ( isset ($_ENV["LPA_BASE_DIR"]) && is_dir ($_ENV["LPA_BASE_DIR"]) ) {
+	$LPA_BASE_DIR = $_ENV["LPA_BASE_DIR"];
+} else {
+	$LPA_BASE_DIR = dirname (realpath ($argv[0]));
+}
+
+#echo "LPA BASE DIR : $LPA_BASE_DIR ";
+ini_set('include_path',ini_get('include_path').":/var/www/nx/lpa:$LPA_BASE_DIR:$LPA_BASE_DIR:$LPA_BASE_DIR/config:$LPA_BASE_DIR/lib:");
+
+#echo "Include Path: " . ini_get('include_path') . "\n";
 
 require "SimpleLDAP.class.php";
 include "config/config.php";
@@ -236,22 +246,36 @@ if ( isset ($opt['checkall']) ) {
 	}
 } else {
 
-		$user_ldap->dn  = $ldap_dn;
-		$user_ldap->gdn = $ldap_gdn;
-		$user_ldap->sdn = $ldap_sdn;
+	$user_ldap->dn  = $ldap_dn;
+	$user_ldap->gdn = $ldap_gdn;
+	$user_ldap->sdn = $ldap_sdn;
+
 
 	$srv = $user_ldap->getHostname();
 	if ( isset($opt['update']) ) { 
-		_update ( $opt['user'], $srv, $opt['attr'], $opt['value'] );		
+		$c = count ($ldapservers);
+		$t = time();
+		$today = date("Y-m-d H:i:s T", $t);
+		$s = $t % (4*60);
+		$minutes = intdiv( $t , 60) ;
+		$m = $minutes % $c;
+
+		$output['unixtime'] = $t;
+		$output['date'] = $today;
+		$output['user'] = $opt['user'];
+		$output['srv'] = $ldapservers[$m];
+
+		if (isset ($opt['server']))  {
+			$output['srv'] = $opt['server'];
+		}
+
+		$update_values = json_encode ( $output );
+		_update ( $opt['user'], $srv, $opt['attr'], $update_values );
 	} else {
 		_do ( $opt['user'], $srv, $opt['attr'], $json );
 	}
 
 }
-
-
-	$output['table']['title'] = "LDAP Replication Monitoring";
-	$output['table']['header'] = array ( "server", "user", "attr", "value" );
 
 	$output1['complete'] = 1;
 	$output1['code'] = 0;

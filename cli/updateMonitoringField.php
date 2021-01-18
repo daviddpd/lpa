@@ -4,7 +4,7 @@
 error_reporting(E_ALL);
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
-ini_set('include_path',ini_get('include_path').':/var/www/nx/lpa:/z/home/dpd/lpa:/z/home/dpd/lpa/config:/z/home/dpd/lpa/lib:');
+ini_set('include_path',ini_get('include_path').":/var/www/nx/lpa:$LPA_BASE_DIR:$LPA_BASE_DIR:$LPA_BASE_DIR/config:$LPA_BASE_DIR/lib:");
 
 require "SimpleLDAP.class.php";
 include "config/config.php";
@@ -22,10 +22,12 @@ function _prompt( $prompt, $hidden=false ) {
 }
 function _usage () {
 echo "
-	--user=<STRING>  ; username/uid required
-	--attr=<STRING>  ; only print att
-	--json			; output in json
-	--sleep		; add jitter
+	--user=<STRING>   ; username/uid required
+	--attr=<STRING>   ; only print att
+	--json			  ; output in json
+	--sleep		      ; add jitter
+
+    --server=LDAPSERVER ; connect to different ldap server than in config
 ";
 
 }
@@ -89,6 +91,10 @@ $output['unixtime'] = $t;
 $output['date'] = $today;
 $output['user'] = $opt['user'];
 $output['srv'] = $ldapservers[$m];
+
+if (isset ($opt['server']))  {
+	$output['srv'] = $opt['server'];
+}
 
 $update_fields[$opt['attr']] = json_encode ( $output );
 
