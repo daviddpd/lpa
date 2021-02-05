@@ -42,6 +42,7 @@ echo "
     --checkall         ; check all ldap servers
 
     --json             ; output in json, cronicle format
+    --jsoncronicle     ; output in json, cronicle format
 
     --nagios           ; reutrn as nagios check
     --warning=seconds  ; number of seconds to trigger a warning (default=320)
@@ -183,6 +184,14 @@ if (isset ($opt['json']))
 	$json = false;
 }
 
+
+if (isset ($opt['jsoncronicle'])) 
+{
+	$jsoncronicle = true;
+} else {
+	$jsoncronicle = false;
+}
+
 /*
     --nagios           ; reutrn as nagios check
     --warning=seconds  ; number of seconds to trigger a warning (default=320)
@@ -221,7 +230,9 @@ if (isset ($opt['server']))  {
 	} else {
 		$tls = true;
 	}
-	echo "Connecting to " . $opt['server'] . "\n";
+	if ( isset ( $opt['debug'] ) ) {	
+		echo "Connecting to " . $opt['server'] . "\n";
+	}
 	$user_ldap = new SimpleLDAP($opt['server'], 389, 3, $tls);
 	
 }
@@ -318,11 +329,17 @@ if ( $nagios )
 	echo $str . "\n";
 }
 	
-if ( $json ) {
+if ( $jsoncronicle ) {
 	# cronicle format
 	echo json_encode($output);
 	echo "\n";	
 	echo json_encode($output1);
+	echo "\n";
+}
+
+if ( $json ) {
+	# cronicle format
+	echo json_encode($output_value);
 	echo "\n";
 }
 
