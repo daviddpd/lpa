@@ -68,12 +68,9 @@ function _do ($user, $srv = NULL, $attr = NULL, $json = false) {
 	if ( is_null ($attr) ) {
 		print_r ($r);
 	} else {
-		if ( defined ($r['user'][$user][$attr]) )
-		{
-			$output['table']['rows'][] = array ( $srv, $user, $attr,  $r['user'][$user][$attr] );
-			$output_text[] = " $srv $user $attr " . $r['user'][$user][$attr];
-			$output_value = json_decode ($r['user'][$user][$attr], true);
-		}
+		$output['table']['rows'][] = array ( $srv, $user, $attr,  $r['user'][$user][$attr] );
+		$output_text[] = " $srv $user $attr " . $r['user'][$user][$attr];
+		$output_value = json_decode ($r['user'][$user][$attr], true);
 	}
 }
 
